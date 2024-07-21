@@ -24,6 +24,7 @@ def classify_genre(genre):
             return category
     return 'Other'  # If genre doesn't match any category, classify as 'Other'
 
+# Encoding The genre (giving it a numerical value) so that the model can load it
 def encodegenre(dataframe):
     genre_df = pd.DataFrame(data= df_copy["track_genre"].unique(),index=df_copy["track_genre"].unique())
     label = LabelEncoder()
@@ -32,6 +33,7 @@ def encodegenre(dataframe):
     genre_df.drop(0, axis=1, inplace=True)
     return genre_df
 
+# Annoy implementation - Target vector initialized, then actual annoy code.
 def annoynn(dataframe, target_vector_dataframe):
     target_vec_arr = target_vector_dataframe.values.flatten().tolist()
     if(len(target_vec_arr) > 11):
@@ -45,11 +47,11 @@ def annoynn(dataframe, target_vector_dataframe):
     # the next few lines is just building the model :P
     index = AnnoyIndex(metric="angular", f = dataframe.shape[1])
     for i in range(len(dataframe)):
-        vec = dataframe.iloc[i].values
-        index.add_item(i, vec)
+        vec = dataframe.iloc[i].values # Initializing values and giving it an index, because annoy needs an index (label) for each vector.
+        index.add_item(i, vec) # Adding the vectors and indices to the AnnoyIndex model
     index.build(n_trees=200)
 
-    # find 500 nearest neighbours
+    # find 500 nearest neighbours of the target vector
     k=500
 
     # Finding indices of nearest neighbours
@@ -63,6 +65,7 @@ def annoynn(dataframe, target_vector_dataframe):
 df = pd.read_csv("SongsCleaned.csv")
 df.drop("dummy", axis=1, inplace=True)
 
+# I used this code to clean the dataset. make sure to remove a '\' wherever there are two of those.
 '''
 df["artists"] = df["artists"].str.replace(';',', ').str.split(r'\\s*\\,\\s*',n=1).str[0]
 
@@ -75,7 +78,7 @@ duplicates = df.duplicated(subset= ["track_name", "artists"], keep= 'first')
 df = df[~duplicates]
 '''
 
-# Apply the classification function to the 'genre' column
+# Apply the classification function to the 'genre' column, if you are using the online dataset and if you want to
 # df['track_genre'] = df['track_genre'].apply(classify_genre)
 
 # Check for stuff in the df
@@ -93,6 +96,7 @@ df_copy["explicit"] = df_copy["explicit"].astype(int)
 # Encoding all the different genres in track_genre
 genre_df = encodegenre(df_copy)
 
+# I used this to check if the genre encoding worked
 genre_df.to_csv("Genres.csv")
 
 # get track name and genre as string input
@@ -115,6 +119,7 @@ target_vec_df = target_vec_df.loc[target_vec_df["track_genre"] == genrenum,['pop
 # drop the track name - as we dont need it anymore
 df_copy.drop("track_name", axis=1, inplace=True)
 
+# Call the annoy function
 nearest_neighbours = annoynn(df_copy,target_vec_df)
 
 # Values for nearest neighbours and returning the songs

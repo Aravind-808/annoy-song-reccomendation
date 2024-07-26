@@ -1,31 +1,15 @@
-from annoy import AnnoyIndex
-import pandas as pd
-import numpy as np
-from sklearn.preprocessing import LabelEncoder
-import streamlit as st
-import warnings
+# Importing necessary modules
+
+from annoy import AnnoyIndex # Model
+import pandas as pd # Data manipulation
+import numpy as np # Data manipulation
+from sklearn.preprocessing import LabelEncoder # Encoding categorical vals
+import streamlit as st # User Interface
+import warnings 
 import time
 warnings.filterwarnings(action='ignore',category=SyntaxWarning)
 
-
-def classify_genre(genre):
-    genre_categories = {
-    'pop': ['pop', 'indie-pop', 'k-pop', 'cantopop', 'j-pop', 'latin', 'malay', 'mandopop', 'pop-film'],
-    'rock': ['rock', 'alt-rock', 'punk-rock', 'grunge', 'garage', 'psych-rock', 'rock-n-roll', 'rockabilly'],
-    'rap': ['hip-hop', 'rap'],
-    'dance': ['electronic', 'techno', 'house', 'edm', 'trance', 'dubstep', 'deep-house', 'disco', 'synth-pop', 'electro', 'detroit-techno', 'minimal-techno', 'hardstyle'],
-    'rnb': ['r-n-b', 'soul', 'gospel'],
-    'folk': ['folk', 'acoustic','bluegrass', 'country', 'singer-songwriter', 'mpb', 'samba', 'tango', 'forro', 'pagode', 'flamenco'],
-    'jazz': ['jazz', 'blues', 'swing'],
-    'metal': ['metal', 'black-metal', 'death-metal', 'heavy-metal', 'metalcore', 'grindcore', 'punk'],
-    'world': ['world-music', 'reggae', 'iranian', 'turkish', 'latino', 'spanish', 'indian'],
-    'miscellaneous': ['ambient', 'anime', 'comedy', 'children', 'disney', 'goth', 'emo', 'industrial', 'show-tunes', 'happy']
-    }
-    for category, genres_list in genre_categories.items():
-        if genre in genres_list:
-            return category
-    return 'Other'
-
+#Encoding genres as they are categorical - important part of the model since we will use song name to match values
 def encodegenre(dataframe):
     genre_df = pd.DataFrame(data= df_copy["track_genre"].unique(),index=df_copy["track_genre"].unique())
     label = LabelEncoder()
@@ -34,6 +18,7 @@ def encodegenre(dataframe):
     genre_df.drop(0, axis=1, inplace=True)
     return genre_df
 
+# Model function
 def annoynn(dataframe, target_vector_dataframe):
     target_vec_arr = target_vector_dataframe.values.flatten().tolist()
     if(len(target_vec_arr) > 11):
@@ -56,20 +41,26 @@ def annoynn(dataframe, target_vector_dataframe):
     nearest_neighbours = [idx for idx in nearest_neighbours if dataframe.iloc[idx]['track_genre'] == genrenum]
     return nearest_neighbours
 
+# Streamlit
 st.title("Song Recommendation System")
 st.markdown("A Simple Bot that recommends songs based on your song.....")
+
+# Reading the dataframe
 df = pd.read_csv("SongsCleaned.csv")
 df.drop("dummy", axis=1, inplace=True)
 
+# Creating copy for manipulation
 df_copy = df.drop(["Unnamed: 0","track_id","mode","artists", "album_name","duration_ms","time_signature","key","loudness"], axis=1)
 df_copy["explicit"] = df_copy["explicit"].astype(int)
 
+# Encoding genres
 genre_df = encodegenre(df_copy)
 
-
+# Get user input for name of song and genre
 trackname = st.text_input("Enter Song: ") 
 genre = st.selectbox("Pick your genre: ", ["folk", "Other","rock","miscellaneous","metal","jazz","pop","dance","rap","rnb","world"])
 
+# Spinner
 with st.spinner('Please wait while the bot searches for the best songs!!'):
     genrenum = genre_df.loc[genre]["encoded"]
 
